@@ -16,8 +16,8 @@
     "@keycloak/keycloak-admin-client": "^23.0.4",
     "@mui/material": "^5.15.10",
     "axios": "^1.6.5",
-    "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "cross-fetch": "^4.0.0",
     "dotenv": "^16.3.1",
@@ -29,6 +29,7 @@
     "keycloak-connect": "^23.0.4",
     "mongoose": "^8.0.4",
     "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
     "twilio": "^4.20.1",
     "validator": "^13.11.0"
   },

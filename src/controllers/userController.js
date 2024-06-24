@@ -16,7 +16,6 @@ import axios from "axios";
 import twilio from "twilio";
 import dotenv from "dotenv";
 import { body, check, validationResult } from "express-validator";
-import bcrypt from "bcrypt";
 import Education from "../models/Education.js";
 dotenv.config();
 const account_sid = process.env.ACCOUNT_SID;
@@ -25,11 +24,15 @@ import multer from 'multer';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import ImageUsers from "../models/ImageUsers.js";
+import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import cloudinary from 'cloudinary';
+cloudinary.v2.config({
+  cloud_name: 'dpk9mpjsd',
+  api_key: '348193888992711',
+  api_secret: 'qefN7t3DU47Kdpnhi9i8G56XHM0',
+});
 
-const uploadDirectory = path.join(__dirname, '../../uploads');
 //
 
 
@@ -386,16 +389,130 @@ const assignDefaultRole = async (req, res) => {
 
 
 
+
+
+
+const uplaodImage=async (req, res) => {
+  console.log(
+      "uploading ................",req
+  )
+
+     
+      try {
+      
+      let imageUrl = '';
+      if (req.file) {
+        const result = await cloudinary.v2.uploader.upload(req.file.path);
+        imageUrl = result.secure_url;
+      }
+  
+      return res.status(200).json({imageUrl: imageUrl});
+
+      } catch (error) {
+          console.error(error);
+          return res.status(500).json({ error: 'Une erreur interne du serveur s\'est produite.' });
+      }
+
+  
+};
+const updateImage = async (req, res) => {
+  const { idUser } = req.params; // Récupérer l'ID de l'utilisateur depuis les paramètres de la requête
+  const userId  = "698c8a41c7e5a7211c858053"
+  try {
+
+
+      const existingImageUser = await ImageUsers.findOne({ userId: idUser });
+
+console.log("UserId+++++++++++++++++")
+console.log(idUser)
+console.log("USerId++++++++++++++++++++++")
+
+      console.log("**************************************")
+console.log(existingImageUser)
+      console.log("**************************************")
+
+
+      if (!existingImageUser) {
+          return res.status(404).json({ error: 'L\'utilisateur n\'existe pas dans la collection ImageUsers.' });
+      }
+
+      // Uploader la nouvelle image
+      upload(req, res, async function (err) {
+          if (err instanceof multer.MulterError) {
+              return res.status(400).json({ error: 'Une erreur s\'est produite lors du téléchargement de l\'image.' });
+          } else if (err) {
+              return res.status(500).json({ error: 'Une erreur interne du serveur s\'est produite.' });
+          }
+
+          const imageName = req.file.filename;
+          const imageUrl = `http://localhost:${process.env.PORT}/uploads/${imageName}`;
+          existingImageUser.imageName = imageName;
+          await existingImageUser.save();
+          // Initialiser Keycloak
+          const client = await initializeKeycloak();
+
+          try {
+              // Récupérer les attributs existants de l'utilisateur dans Keycloak
+              const userResponse = await axios.get(
+                  `${client.baseUrl}/admin/realms/${client.realmName}/users/${idUser}`,
+                  {
+                      headers: {
+                          Authorization: `Bearer ${await client.getAccessToken()}`
+                      }
+                  }
+              );
+
+              const user = userResponse.data;
+
+              // Créer un objet contenant uniquement l'attribut image pour la mise à jour
+              const updatedAttributes = {
+                  ...user.attributes, // Conserver les attributs existants
+                  image: imageUrl // Mettre à jour seulement l'attribut de l'image
+              };
+
+              // Mettre à jour l'attribut image de l'utilisateur dans Keycloak
+              await axios.put(
+                  `${client.baseUrl}/admin/realms/${client.realmName}/users/${idUser}`,
+                  {
+                      ...user,
+                      attributes: updatedAttributes
+                  },
+                  {
+                      headers: {
+                          Authorization: `Bearer ${await client.getAccessToken()}`,
+                          'Content-Type': 'application/json'
+                      }
+                  }
+              );
+
+              return res.status(200).json({ imageUrl: imageUrl });
+          } catch (error) {
+              console.error('Erreur lors de la mise à jour de l\'image de l\'utilisateur dans Keycloak:', error);
+              return res.status(500).json({ error: 'Une erreur est survenue lors de la mise à jour de l\'image de l\'utilisateur dans Keycloak.' });
+          }
+      });
+  } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'image de l\'utilisateur:', error);
+      return res.status(500).json({ error: 'Une erreur est survenue lors de la mise à jour de l\'image de l\'utilisateur.' });
+  }
+};
+
+
+
+
+
+
+
 export {
   
   getAll,
   
   getAllUsers,
  
-  checkUserRole,
+  checkUserRole,updateImage,
 
   getCompetencesAndExperiencesByUserId,
   getCompetencesEducationAndExperiencesByUserId,
  
-  getUserIdByEmail,verifUnicUsername,verifUnicMobile,verifUnicEmail,updateUserInKeycloak,updateUser,assignDefaultRole
+  getUserIdByEmail,verifUnicUsername,verifUnicMobile,verifUnicEmail,updateUserInKeycloak,updateUser,assignDefaultRole,uplaodImage
 };
