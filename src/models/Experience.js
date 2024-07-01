@@ -7,8 +7,7 @@ const experienceSchema = new mongoose.Schema({
   dateFin: { type: Date, required: true },
   description: { type: String, required: false },
 
-  user: { type: String, required: true},
-
+  user: { type: String, required: true },
 });
 
 const Experience = mongoose.model('Experience', experienceSchema);
